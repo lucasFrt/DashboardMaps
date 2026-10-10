@@ -125,6 +125,15 @@ insert into config (chave, valor) values
   ('inicio',          '"2026-10-10"')
 on conflict (chave) do nothing;
 
+-- Reparo: versões anteriores gravavam config serializada duas vezes (ex.: "\"Lucas\"", "false").
+-- Só mexe em valores que são claramente JSON dentro de uma string; é seguro rodar sempre.
+update config set valor = (valor #>> '{}')::jsonb
+where jsonb_typeof(valor) = 'string' and (
+     (chave in ('pix', 'assinatura') and (valor #>> '{}') ~ '^(".*"|null)$')
+  or (chave = 'gate_ativo' and (valor #>> '{}') in ('true', 'false'))
+  or (chave = 'limite_diario' and (valor #>> '{}') ~ '^[0-9]+$')
+  or (chave = 'imap_estado' and (valor #>> '{}') ~ '^\{.*\}$'));
+
 insert into caixa (tipo, valor, descricao)
 select 'capital', 300, 'Capital inicial do investidor'
 where not exists (select 1 from caixa where tipo = 'capital');

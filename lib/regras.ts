@@ -62,8 +62,10 @@ export async function lerConfig(tx: Tx = db()) {
 export type Config = Awaited<ReturnType<typeof lerConfig>>;
 
 export async function gravarConfig(chave: string, valor: unknown) {
+  // O cast passa por text de propósito: com `${json}::jsonb` o driver vê um parâmetro jsonb e
+  // serializa de novo, gravando "\"valor\"" (e false como a string "false").
   const json = JSON.stringify(valor ?? null);
-  await db()`insert into config (chave, valor) values (${chave}, ${json}::jsonb)
+  await db()`insert into config (chave, valor) values (${chave}, (${json}::text)::jsonb)
              on conflict (chave) do update set valor = excluded.valor`;
 }
 
