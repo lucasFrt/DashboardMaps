@@ -282,3 +282,19 @@ export async function saldo(tx: Tx = db()) {
   const capital = Number(r.capital), receita = Number(r.receita), gasto = Number(r.gasto);
   return { capital, receita, gasto, saldo: capital + receita - gasto };
 }
+
+/** Canal manual (WhatsApp/Instagram): o investidor envia do próprio aparelho e confirma aqui. */
+export async function confirmarEnvioManual(id: number, edicao?: { assunto?: string | null; corpo?: string }) {
+  await aprovarMensagem(id, edicao);
+  return db().begin(async (tx) => {
+    const [m] = await tx<{ lead_id: number; tipo: string; canal: string }[]>`
+      update mensagens set status = 'enviada', enviada_em = now()
+      where id = ${id} and status = 'aprovada' and canal = 'manual' returning lead_id, tipo, canal`;
+    if (!m) falha('mensagem não é de canal manual');
+    const [l] = await tx<{ status: Status }[]>`select status from leads where id = ${m.lead_id}`;
+    if (m.tipo === 'abordagem' && ['encontrado', 'amostra_pronta', 'aguardando_aprovacao'].includes(l.status)) {
+      await transicionar(tx, m.lead_id, 'abordado', 'sistema', 'enviado manualmente');
+    }
+    if (m.tipo === 'entrega') await transicionar(tx, m.lead_id, 'entregue', 'sistema', 'enviado manualmente');
+  });
+}
