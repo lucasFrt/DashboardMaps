@@ -17,24 +17,23 @@ Contexto e regras: [`docs/PROJETO.md`](docs/PROJETO.md). Roteiro de cada rodada 
  Postgres grátis (Neon)
 ```
 
-## Colocar no ar (uma vez, ~20 min)
+## Colocar no ar
 
 ### 1. Banco (feito)
 
-O projeto Neon `dashboardmaps` já existe (região São Paulo, banco `painel`) e o schema já foi aplicado.
-Pegue a URL de conexão em [console.neon.tech](https://console.neon.tech): projeto **dashboardmaps** →
-**Connect** → banco `painel`, com **Connection pooling** ligado → copie a string `postgresql://…`.
-Ela vai em `DATABASE_URL` na Vercel (passo 5).
+Projeto Neon `dashboardmaps` (São Paulo), banco `painel`. O schema é reaplicado a cada deploy por
+`scripts/migrate.mjs`, que é idempotente e não apaga nada.
 
-### 2. Vercel
+### 2. Vercel (feito)
 
-1. Em [vercel.com/new](https://vercel.com/new), importe o repositório `lucasfrt/dashboardmaps` (plano Hobby, grátis).
-2. As funções rodam em São Paulo (`gru1`, definido em `vercel.json`), ao lado do banco.
-3. A cada deploy, `scripts/migrate.mjs` reaplica o schema. Ele é idempotente e não apaga nada.
+Projeto `dashboardmaps` na equipe VEENTY, ligado ao GitHub: cada push no branch de produção
+(`claude/compassionate-hamilton-v3jd0w`) vira deploy. Painel: **https://dashboardmaps.vercel.app**.
+Funções em São Paulo (`gru1`, via `vercel.json`). A proteção da Vercel vale só para URLs de preview;
+a produção é pública porque as amostras e a API do agente precisam ser acessíveis. O painel tem a
+própria senha.
 
-> O agente precisa da URL de **produção**. As URLs de preview ficam atrás do login da Vercel e o agente
-> não consegue acessá-las. Como o repositório só tem este branch, defina-o como branch de produção em
-> Settings → Git, ou crie um `main` a partir dele.
+Já cadastradas (tipo *sensitive*): `DATABASE_URL`, `PANEL_PASSWORD`, `AGENT_TOKEN`.
+`APP_URL` não é necessária: o app usa o domínio de produção da Vercel.
 
 ### 3. Gmail (envio e leitura)
 
@@ -53,14 +52,10 @@ pessoal não corre risco.
 3. Para garantir custo zero, em **APIs e serviços → Places API (New) → Cotas**, limite as
    requisições de Text Search a ~50 por dia. A cota grátis é de 1.000 por mês no SKU usado (com avaliações).
 
-### 5. Variáveis de ambiente na Vercel
+### 5. Variáveis que faltam na Vercel
 
 | Variável | Valor |
 |---|---|
-| `DATABASE_URL` | a string do Neon (passo 1) |
-| `PANEL_PASSWORD` | sua senha do painel (longa) |
-| `AGENT_TOKEN` | token aleatório (ex.: `openssl rand -hex 24`) |
-| `APP_URL` | `https://<seu-projeto>.vercel.app` |
 | `SMTP_USER` | o Gmail do negócio |
 | `SMTP_PASS` | a senha de app |
 | `SMTP_FROM_NAME` | seu nome, como aparece no remetente |
@@ -73,8 +68,8 @@ Depois de salvar, faça **Redeploy**. Entre no painel, vá em **Config** e preen
 ### 6. Ambiente do agente (Claude Code na nuvem)
 
 No ambiente da sessão (menu do ambiente → Editar):
-- Variáveis: `PAINEL_URL=https://<seu-projeto>.vercel.app` e `AGENT_TOKEN=<o mesmo da Vercel>`.
-- Acesso à rede: adicione `<seu-projeto>.vercel.app` aos domínios permitidos.
+- Variáveis: `PAINEL_URL=https://dashboardmaps.vercel.app` e `AGENT_TOKEN=<o mesmo da Vercel>`.
+- Acesso à rede: adicione `dashboardmaps.vercel.app` aos domínios permitidos.
 
 ### 7. Rodadas
 
