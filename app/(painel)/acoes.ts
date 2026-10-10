@@ -99,6 +99,8 @@ export async function configurar(f: FormData) {
       if (!Number.isInteger(n) || n < 0 || n > 40) throw new RegraVioladaError('limite deve ficar entre 0 e 40');
       await gravarConfig('limite_diario', n);
     }
+    if (f.has('pix')) await gravarConfig('pix', texto(f, 'pix').trim() || null);
+    if (f.has('assinatura')) await gravarConfig('assinatura', texto(f, 'assinatura').trim() || null);
   }, 'Configuração salva');
 }
 

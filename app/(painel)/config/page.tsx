@@ -38,6 +38,16 @@ export default async function Config({ searchParams }: { searchParams: Promise<{
       </form>
 
       <form action={configurar} className="card">
+        <h3>Seus dados para o agente</h3>
+        <p className="small muted">O agente usa a chave Pix ao fechar uma venda e a assinatura no fim dos e-mails (que saem em seu nome).</p>
+        <label htmlFor="pix">Chave Pix</label>
+        <input id="pix" name="pix" defaultValue={cfg.pix ?? ''} placeholder="e-mail, telefone, CPF/CNPJ ou chave aleatória" />
+        <label htmlFor="assinatura">Assinatura</label>
+        <input id="assinatura" name="assinatura" defaultValue={cfg.assinatura ?? ''} placeholder="Ex.: Lucas · (21) 9xxxx-xxxx" />
+        <div className="acoes"><button type="submit">Salvar</button></div>
+      </form>
+
+      <form action={configurar} className="card">
         <h3>Limite diário de e-mails frios</h3>
         <p className="small muted">Abordagens + follow-ups. Respostas a quem escreveu e entregas não contam.</p>
         <div className="linha-form">

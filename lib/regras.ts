@@ -55,12 +55,15 @@ export async function lerConfig(tx: Tx = db()) {
     meta: Number(c.meta ?? 600),
     prazo: String(c.prazo ?? '2026-11-10'),
     inicio: String(c.inicio ?? '2026-10-10'),
+    pix: c.pix ? String(c.pix) : null,
+    assinatura: c.assinatura ? String(c.assinatura) : null,
   };
 }
 export type Config = Awaited<ReturnType<typeof lerConfig>>;
 
 export async function gravarConfig(chave: string, valor: unknown) {
-  await db()`insert into config (chave, valor) values (${chave}, ${db().json(valor as never)})
+  const json = JSON.stringify(valor ?? null);
+  await db()`insert into config (chave, valor) values (${chave}, ${json}::jsonb)
              on conflict (chave) do update set valor = excluded.valor`;
 }
 

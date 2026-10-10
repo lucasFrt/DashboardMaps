@@ -34,8 +34,10 @@ export async function resumo() {
   const cfg = await lerConfig();
   const caixa = await saldo();
   const porStatus = await sql<{ status: string; n: number }[]>`select status, count(*)::int as n from leads group by status`;
-  const [m] = await sql<{ aguardando: number; abordagens_enviadas: number; abordagens_aprovadas: number; respostas: number }[]>`
+  const [m] = await sql<{ aguardando: number; abordagens_enviadas: number; abordagens_aprovadas: number; respostas: number; criadas_hoje: number }[]>`
     select count(*) filter (where status = 'aguardando_aprovacao')::int as aguardando,
+           count(*) filter (where tipo = 'abordagem' and status <> 'rejeitada'
+             and criado_em >= (date_trunc('day', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo'))::int as criadas_hoje,
            count(*) filter (where tipo = 'abordagem' and status = 'enviada')::int as abordagens_enviadas,
            count(*) filter (where tipo = 'abordagem' and status in ('aprovada', 'enviada'))::int as abordagens_aprovadas,
            count(*) filter (where direcao = 'entrada')::int as respostas
@@ -54,6 +56,7 @@ export async function resumo() {
     abordagens_enviadas: m.abordagens_enviadas,
     abordagens_aprovadas: m.abordagens_aprovadas,
     respostas_recebidas: m.respostas,
+    abordagens_criadas_hoje: m.criadas_hoje,
     gastos_pendentes: g.n,
     frios_enviados_hoje: hoje,
     frios_aprovados_na_fila: fila,
