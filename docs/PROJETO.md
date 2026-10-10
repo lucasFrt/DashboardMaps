@@ -75,7 +75,7 @@ encontrado → amostra_pronta → aguardando_aprovacao → abordado → responde
 | Tema | Decisão | Por quê |
 |---|---|---|
 | Painel | Next.js na Vercel (plano grátis) | Pedido do investidor; acessível do celular. |
-| Banco | Postgres grátis (Neon pelo Marketplace da Vercel; Supabase também serve) | Persistente; o container do agente é descartável. |
+| Banco | Postgres grátis no Neon, projeto `dashboardmaps` em São Paulo; funções da Vercel também em São Paulo (`gru1`) | Persistente; o container do agente é descartável. Mesma região = consultas rápidas. |
 | Usuários | Um só, por senha (`PANEL_PASSWORD`) | Só o investidor usa o painel. |
 | Agente → painel | API `/api/agent/*` com token (`AGENT_TOKEN`) | O agente só precisa da URL e do token; credenciais ficam na Vercel. |
 | Regras | Aplicadas no servidor, não só no prompt | O agente não consegue violar as regras mesmo se errar. |
