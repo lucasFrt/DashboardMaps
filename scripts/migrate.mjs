@@ -7,7 +7,10 @@ if (!url) {
   console.warn('[migrate] DATABASE_URL ausente, migração pulada.');
   process.exit(0);
 }
-const sql = postgres(url, { max: 1, prepare: false, onnotice: () => {} });
+// channel_binding (que o Neon põe na URL) só existe no libpq; o driver o mandaria ao servidor.
+const limpa = new URL(url);
+limpa.searchParams.delete('channel_binding');
+const sql = postgres(limpa.toString(), { max: 1, prepare: false, onnotice: () => {} });
 try {
   await sql.unsafe(readFileSync(new URL('../db/schema.sql', import.meta.url), 'utf8'));
   console.log('[migrate] schema aplicado.');
