@@ -83,13 +83,13 @@ export async function estadoParaAgente() {
   const paraEntregar = await sql`
     select id, nome, categoria, bairro, valor, (entrega is not null and entrega <> '') as entrega_gravada
     from leads l where status = 'pago'
-      and not exists (select 1 from mensagens m where m.lead_id = l.id and m.tipo = 'entrega' and m.status <> 'rejeitada')`;
+      and not exists (select 1 from mensagens m where m.lead_id = l.id and m.tipo = 'entrega' and m.status not in ('rejeitada', 'erro'))`;
   const paraFollowUp = await sql`
     select l.id, l.nome, l.email, a.enviada_em as abordado_em
     from leads l join mensagens a on a.lead_id = l.id and a.tipo = 'abordagem' and a.status = 'enviada'
     where l.status = 'abordado' and not l.nao_contatar
       and a.enviada_em < now() - interval '3 days'
-      and not exists (select 1 from mensagens f where f.lead_id = l.id and f.tipo = 'follow_up' and f.status <> 'rejeitada')
+      and not exists (select 1 from mensagens f where f.lead_id = l.id and f.tipo = 'follow_up' and f.status not in ('rejeitada', 'erro'))
       and not exists (select 1 from mensagens r where r.lead_id = l.id and r.direcao = 'entrada')`;
   const semRespostaFinal = await sql`
     select l.id, l.nome from leads l join mensagens f on f.lead_id = l.id and f.tipo = 'follow_up' and f.status = 'enviada'
@@ -106,7 +106,7 @@ export async function estadoParaAgente() {
   const semAbordagem = await sql`
     select id, nome, status, categoria, bairro, (amostra is not null and amostra <> '') as tem_amostra, (email is not null) as tem_email
     from leads l where status in ('encontrado', 'amostra_pronta') and not nao_contatar
-      and not exists (select 1 from mensagens m where m.lead_id = l.id and m.tipo = 'abordagem' and m.status <> 'rejeitada')
+      and not exists (select 1 from mensagens m where m.lead_id = l.id and m.tipo = 'abordagem' and m.status not in ('rejeitada', 'erro'))
     order by criado_em`;
   const erros = await sql`
     select m.id, m.lead_id, m.tipo, m.motivo from mensagens m where m.status = 'erro' order by m.id desc limit 20`;

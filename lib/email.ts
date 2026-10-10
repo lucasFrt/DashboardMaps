@@ -78,12 +78,20 @@ export async function enviarAprovadas() {
     const [anterior] = await sql<{ message_id: string; assunto: string | null }[]>`
       select message_id, assunto from mensagens
       where lead_id = ${m.lead_id} and message_id is not null and id <> ${m.id}
-      order by coalesce(recebida_em, enviada_em) desc limit 1`;
+      order by coalesce(recebida_em, enviada_em) desc nulls last limit 1`;
     const [primeira] = await sql<{ assunto: string | null }[]>`
       select assunto from mensagens where lead_id = ${m.lead_id} and tipo = 'abordagem' and status = 'enviada' limit 1`;
     const assunto = m.assunto?.trim() || (primeira?.assunto ? `Re: ${primeira.assunto.replace(/^re:\s*/i, '')}` : 'Contato');
     const messageId = `<${randomUUID()}@${dominio}>`;
     const base = urlBase();
+
+    // Reserva a mensagem antes de enviar: se outra execução (rodada x botão do painel) chegar
+    // junto, só uma consegue e o e-mail não sai duas vezes.
+    const [reservada] = await sql`
+      update mensagens set status = 'enviada', enviada_em = now(), message_id = ${messageId},
+             in_reply_to = ${anterior?.message_id ?? null}, assunto = ${assunto}, de = ${process.env.SMTP_USER!}
+      where id = ${m.id} and status = 'aprovada' returning id`;
+    if (!reservada) continue;
 
     try {
       await smtp.sendMail({
@@ -100,15 +108,17 @@ export async function enviarAprovadas() {
       });
     } catch (e) {
       const erro = e instanceof Error ? e.message : String(e);
-      await sql`update mensagens set status = 'erro', motivo = ${erro.slice(0, 500)} where id = ${m.id}`;
+      await sql`update mensagens set status = 'erro', motivo = ${erro.slice(0, 500)}, enviada_em = null, message_id = null
+                where id = ${m.id}`;
+      if (m.tipo === 'abordagem' && m.lead_status === 'aguardando_aprovacao') {
+        // Libera o lead para uma nova abordagem (ex.: após corrigir o e-mail).
+        await sql.begin((tx) => transicionar(tx, m.lead_id, 'amostra_pronta', 'sistema', 'falha no envio'));
+      }
       resultado.erros.push({ id: m.id, erro });
       continue;
     }
 
     await sql.begin(async (tx) => {
-      await tx`update mensagens set status = 'enviada', enviada_em = now(), message_id = ${messageId},
-                 in_reply_to = ${anterior?.message_id ?? null}, assunto = ${assunto}, de = ${process.env.SMTP_USER!}
-               where id = ${m.id}`;
       if (m.tipo === 'abordagem' && ['encontrado', 'amostra_pronta', 'aguardando_aprovacao'].includes(m.lead_status)) {
         await transicionar(tx, m.lead_id, 'abordado', 'sistema');
       }

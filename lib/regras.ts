@@ -159,8 +159,8 @@ export async function criarMensagem(
     if (lead.nao_contatar || (await bloqueado(tx, lead))) falha('lead está na lista de não contatar');
 
     const [cont] = await tx<{ abordagens: number; follow_ups: number; entradas: number }[]>`
-      select count(*) filter (where tipo = 'abordagem' and status <> 'rejeitada')::int as abordagens,
-             count(*) filter (where tipo = 'follow_up' and status <> 'rejeitada')::int as follow_ups,
+      select count(*) filter (where tipo = 'abordagem' and status not in ('rejeitada', 'erro'))::int as abordagens,
+             count(*) filter (where tipo = 'follow_up' and status not in ('rejeitada', 'erro'))::int as follow_ups,
              count(*) filter (where direcao = 'entrada')::int as entradas
       from mensagens where lead_id = ${leadId}`;
 
